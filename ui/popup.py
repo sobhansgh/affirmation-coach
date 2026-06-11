@@ -1,30 +1,41 @@
 import flet as ft
 from services.sound_service import play_sound
+from database.database import SessionLocal
+from services.streak_service import add_xp, update_streak
 
-
-# بعداً سرویس‌های ثبت XP و لاگ در دیتابیس را به اینجا متصل می‌کنیم
 
 def show_affirmation_popup(page: ft.Page, affirmation_text: str):
-    """نمایش پاپ‌آپ عبارت تأکیدی"""
+    """نمایش پاپ‌آپ عبارت تأکیدی و ثبت امتیاز"""
 
     # پخش صدای آرامش‌بخش
     play_sound("zen.wav")
 
     def handle_done(e):
-        # منطق ثبت موفقیت و دریافت XP
-        print("انجام شد!")
+        db = SessionLocal()
+        try:
+            # اضافه کردن 10 امتیاز برای انجام موفق
+            add_xp(db, 10)
+            # آپدیت استریک
+            update_streak(db, all_daily_reminders_completed=True)
+        finally:
+            db.close()
+
         dialog.open = False
         page.update()
 
     def handle_snooze(e):
-        # منطق تعویق (مثلاً 15 دقیقه بعد)
-        print("بعداً یادآوری کن!")
+        # فعلا فقط پنجره بسته می‌شود (منطق تعویق در زمان‌بندی بعدا اضافه می‌شود)
         dialog.open = False
         page.update()
 
     def handle_failed(e):
-        # منطق ثبت شکست و ریست استریک
-        print("انجام ندادم!")
+        db = SessionLocal()
+        try:
+            # در صورت عدم انجام، استریک صفر می‌شود
+            update_streak(db, all_daily_reminders_completed=False)
+        finally:
+            db.close()
+
         dialog.open = False
         page.update()
 

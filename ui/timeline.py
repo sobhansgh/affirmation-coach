@@ -9,7 +9,7 @@ class TimelineView:
         self.page = page
 
     def build(self):
-        self.achievements_list = ft.Column(spacing=10, scroll=ft.ScrollMode.AUTO)
+        self.achievements_list = ft.Column(spacing=10, scroll=ft.ScrollMode.AUTO, expand=True)
         self.load_achievements()
 
         return ft.Container(
