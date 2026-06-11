@@ -12,8 +12,42 @@ def main(page: ft.Page):
     page.window_height = 700
     page.rtl = True
     page.theme_mode = ft.ThemeMode.DARK
-    page.theme = ft.Theme(font_family="Segoe UI")
+    # page.theme = ft.Theme(font_family="Segoe UI")
     page.padding = 0
+
+    # --- تنظیمات فونت اختصاصی ---
+    page.fonts = {
+        "IRANYekan": "fonts/iranyekan/iranyekan.ttf"
+    }
+    # اعمال فونت روی کل تم برنامه
+    page.theme = ft.Theme(font_family="IRANYekan")
+
+
+    # def on_route_change(e):
+    #     page.views.clear()
+    #
+    #     # نمایش ویو داشبورد
+    #     dashboard_view = DashboardView(page)
+    #     page.views.append(
+    #         ft.View(
+    #             "/",
+    #             [
+    #                 ft.AppBar(title=ft.Text("مربی تأکیدی من", weight=ft.FontWeight.BOLD), bgcolor=ft.colors.SURFACE_VARIANT),
+    #                 dashboard_view.build()
+    #             ],
+    #         )
+    #     )
+    #     page.update()
+    #
+    # def view_pop(e):
+    #     page.views.pop()
+    #     top_view = page.views[-1]
+    #     page.go(top_view.route)
+    #
+    # page.on_route_change = on_route_change
+    # page.on_view_pop = view_pop
+    # page.go(page.route)
+
 
     # مقداردهی صفحات
     dashboard_view = DashboardView(page)
@@ -25,7 +59,6 @@ def main(page: ft.Page):
         padding=20,
         content=dashboard_view.build()
     )
-
     def on_nav_change(e):
         selected_index = e.control.selected_index
         if selected_index == 0:
@@ -74,4 +107,4 @@ def main(page: ft.Page):
     )
 
 if __name__ == "__main__":
-    ft.app(target=main)
+    ft.app(target=main, assets_dir="assets")

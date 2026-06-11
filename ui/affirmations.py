@@ -1,6 +1,6 @@
 import flet as ft
 from database.database import SessionLocal
-from services.affirmation_service import get_active_affirmations, add_affirmation
+from services.affirmation_service import add_affirmation, get_active_affirmations
 
 
 class AffirmationsView:
@@ -8,11 +8,9 @@ class AffirmationsView:
         self.page = page
 
     def build(self):
-        self.list_view = ft.ListView(expand=True, spacing=10)
-        self.load_affirmations()
+        # فیلدهای ورودی
+        self.text_input = ft.TextField(label="عبارت تأکیدی جدید خود را بنویسید...", expand=True)
 
-        # فرم پاپ‌آپ برای افزودن عبارت جدید
-        self.new_text_field = ft.TextField(label="متن عبارت تأکیدی", multiline=True, rtl=True)
         self.category_dropdown = ft.Dropdown(
             label="دسته‌بندی",
             options=[
@@ -21,80 +19,91 @@ class AffirmationsView:
                 ft.dropdown.Option("سلامتی"),
                 ft.dropdown.Option("روابط"),
                 ft.dropdown.Option("کسب و کار"),
+                ft.dropdown.Option("شخصی"),
             ],
-            value="اعتماد به نفس"
+            width=180
         )
 
-        self.add_dialog = ft.AlertDialog(
-            title=ft.Text("افزودن عبارت جدید"),
-            content=ft.Column([self.new_text_field, self.category_dropdown], tight=True),
-            actions=[
-                ft.TextButton("ذخیره", on_click=self.save_affirmation, style=ft.ButtonStyle(color=ft.colors.GREEN)),
-                ft.TextButton("انصراف", on_click=lambda e: self.close_dialog()),
-            ],
+        add_button = ft.ElevatedButton(
+            "افزودن",
+            on_click=self.add_new_affirmation,
+            icon=ft.icons.ADD,
+            style=ft.ButtonStyle(bgcolor=ft.colors.BLUE_700, color=ft.colors.WHITE)
         )
 
-        return ft.Stack(
-            controls=[
-                ft.Column([
-                    ft.Text("مدیریت عبارات تأکیدی", size=28, weight=ft.FontWeight.BOLD),
-                    ft.Divider(height=20, color=ft.colors.TRANSPARENT),
-                    self.list_view
-                ], expand=True),
+        # فضایی برای نمایش لیست عبارات
+        self.affirmations_list = ft.Column(spacing=10, scroll=ft.ScrollMode.AUTO, expand=True)
 
-                # دکمه شناور در پایین صفحه
-                ft.FloatingActionButton(
-                    icon=ft.icons.ADD,
-                    bgcolor=ft.colors.BLUE_400,
-                    on_click=self.open_dialog,
-                    bottom=20,
-                    right=20,  # در حالت RTL در سمت چپ نمایش داده می‌شود
-                )
-            ],
-            expand=True
+        # بارگذاری اولیه لیست
+        self.load_affirmations()
+
+        return ft.Container(
+            padding=20,
+            expand=True,
+            content=ft.Column(
+                controls=[
+                    ft.Text("مدیریت عبارات تأکیدی", size=24, weight=ft.FontWeight.BOLD),
+                    ft.Text("عباراتی که در اینجا اضافه می‌کنید در زمان‌بندی‌های مشخص به شما یادآوری می‌شوند.", color=ft.colors.OUTLINE),
+                    ft.Container(height=10),
+
+                    # فرم افزودن عبارت
+                    ft.Row(
+                        controls=[self.text_input, self.category_dropdown, add_button],
+                        alignment=ft.MainAxisAlignment.SPACE_BETWEEN
+                    ),
+                    ft.Divider(height=30, color=ft.colors.SURFACE_VARIANT),
+
+                    # لیست عبارات
+                    self.affirmations_list
+                ],
+                expand=True
+            )
         )
 
     def load_affirmations(self):
-        self.list_view.controls.clear()
+        """خواندن عبارات از دیتابیس و رندر کردن آن‌ها در لیست"""
+        self.affirmations_list.controls.clear()
         db = SessionLocal()
         try:
             affirmations = get_active_affirmations(db)
-            if not affirmations:
-                self.list_view.controls.append(ft.Text("هنوز عبارتی ثبت نکرده‌اید.", color=ft.colors.OUTLINE))
-
             for aff in affirmations:
-                self.list_view.controls.append(
-                    ft.ListTile(
-                        leading=ft.Icon(ft.icons.FORMAT_QUOTE, color=ft.colors.BLUE_400),
+                # طراحی هر ردیف از عبارات به صورت یک کارت کوچک (ListTile)
+                item = ft.Card(
+                    elevation=1,
+                    content=ft.ListTile(
+                        leading=ft.Icon(ft.icons.AUTO_AWESOME, color=ft.colors.AMBER_400),
                         title=ft.Text(aff.text, size=16),
-                        subtitle=ft.Text(aff.category, size=12, color=ft.colors.OUTLINE),
-                        trailing=ft.Switch(value=aff.is_active, active_color=ft.colors.GREEN_400),
-                        bgcolor=ft.colors.SURFACE_VARIANT,
-                        shape=ft.RoundedRectangleBorder(radius=10)
+                        subtitle=ft.Text(aff.category, color=ft.colors.BLUE_200, size=12),
+                        trailing=ft.IconButton(
+                            ft.icons.DELETE_OUTLINE,
+                            icon_color=ft.colors.RED_400,
+                            tooltip="حذف موقت"
+                        )
                     )
                 )
+                self.affirmations_list.controls.append(item)
         finally:
             db.close()
 
-    def open_dialog(self, e):
-        self.page.dialog = self.add_dialog
-        self.add_dialog.open = True
-        self.page.update()
-
-    def close_dialog(self):
-        self.add_dialog.open = False
-        self.page.update()
-
-    def save_affirmation(self, e):
-        text = self.new_text_field.value
-        category = self.category_dropdown.value
-        if text and category:
-            db = SessionLocal()
-            try:
-                add_affirmation(db, text, category)
-            finally:
-                db.close()
-            self.new_text_field.value = ""
-            self.close_dialog()
-            self.load_affirmations()
+        # بروزرسانی صفحه برای نمایش تغییرات
+        if self.page:
             self.page.update()
+
+    def add_new_affirmation(self, e):
+        """منطق دکمه افزودن"""
+        if not self.text_input.value or not self.category_dropdown.value:
+            # اگر فیلدها خالی بود کاری نکن
+            return
+
+        db = SessionLocal()
+        try:
+            add_affirmation(db, self.text_input.value, self.category_dropdown.value)
+
+            # پاک کردن فیلدها بعد از ثبت موفق
+            self.text_input.value = ""
+            self.category_dropdown.value = None
+
+            # رفرش کردن لیست
+            self.load_affirmations()
+        finally:
+            db.close()
