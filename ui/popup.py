@@ -1,16 +1,19 @@
+import asyncio
+
 import flet as ft
 from services.sound_service import play_sound
 from database.database import SessionLocal
 from services.streak_service import add_xp, update_streak
 
 
-def show_affirmation_popup(page: ft.Page, affirmation_text: str):
+async def show_affirmation_popup(page: ft.Page, affirmation_text: str):
     """نمایش پاپ‌آپ عبارت تأکیدی و ثبت امتیاز"""
 
     # پخش صدای آرامش‌بخش
-    play_sound("zen.wav")
+    # play_sound("sound_2.mp3")
+    await asyncio.to_thread(play_sound, "sound_2.mp3")
 
-    def handle_done(e):
+    async def handle_done(e):
         db = SessionLocal()
         try:
             # اضافه کردن 10 امتیاز برای انجام موفق
@@ -21,14 +24,14 @@ def show_affirmation_popup(page: ft.Page, affirmation_text: str):
             db.close()
 
         dialog.open = False
-        page.update()
+        await page.update_async()
 
-    def handle_snooze(e):
+    async def handle_snooze(e):
         # فعلا فقط پنجره بسته می‌شود (منطق تعویق در زمان‌بندی بعدا اضافه می‌شود)
         dialog.open = False
-        page.update()
+        await page.update_async()
 
-    def handle_failed(e):
+    async def handle_failed(e):
         db = SessionLocal()
         try:
             # در صورت عدم انجام، استریک صفر می‌شود
@@ -37,7 +40,7 @@ def show_affirmation_popup(page: ft.Page, affirmation_text: str):
             db.close()
 
         dialog.open = False
-        page.update()
+        await page.update_async()
 
     dialog = ft.AlertDialog(
         modal=True,
@@ -62,4 +65,4 @@ def show_affirmation_popup(page: ft.Page, affirmation_text: str):
 
     page.dialog = dialog
     dialog.open = True
-    page.update()
+    await page.update_async()

@@ -25,6 +25,7 @@ def main(page: ft.Page):
     }
     page.theme = ft.Theme(font_family="IRANYekan")
 
+
     # --- منطق زمان‌بندی و پاپ‌آپ ---
     def handle_scheduler_trigger():
         """این تابع زمانی که وقت یادآوری برسد اجرا می‌شود"""
@@ -40,6 +41,7 @@ def main(page: ft.Page):
                 print("هیچ عبارت فعالی برای نمایش وجود ندارد.")
         finally:
             db.close()
+
 
     # اتصال Scheduler به Flet و شروع زمان‌بندی (تست: هر 1 دقیقه)
     set_ui_callback(handle_scheduler_trigger)
