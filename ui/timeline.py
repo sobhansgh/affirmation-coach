@@ -48,7 +48,7 @@ class TimelineView:
                             title=ft.Text(ach.title, size=16, weight=ft.FontWeight.BOLD),
                             subtitle=ft.Text(ach.description, color=ft.colors.OUTLINE),
                             bgcolor=ft.colors.SURFACE_VARIANT,
-                            shape=ft.RoundedRectangleBorder(radius=10)
+                            # shape=ft.RoundedRectangleBorder(radius=10)
                         )
                     )
                 )

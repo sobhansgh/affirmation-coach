@@ -1,7 +1,12 @@
 import flet as ft
-from database.database import Base, engine
+import random
+from database.database import Base, engine, SessionLocal
 from ui.dashboard import DashboardView
 from ui.affirmations import AffirmationsView
+from ui.timeline import TimelineView
+from ui.popup import show_affirmation_popup
+from services.affirmation_service import get_active_affirmations
+from services.reminder_service import start_scheduler, set_ui_callback, schedule_interval_reminder
 
 # اطمینان از ساخته شدن دیتابیس
 Base.metadata.create_all(bind=engine)
@@ -12,59 +17,51 @@ def main(page: ft.Page):
     page.window_height = 700
     page.rtl = True
     page.theme_mode = ft.ThemeMode.DARK
-    # page.theme = ft.Theme(font_family="Segoe UI")
     page.padding = 0
 
-    # --- تنظیمات فونت اختصاصی ---
+    # تنظیمات فونت
     page.fonts = {
         "IRANYekan": "fonts/iranyekan/iranyekan.ttf"
     }
-    # اعمال فونت روی کل تم برنامه
     page.theme = ft.Theme(font_family="IRANYekan")
 
+    # --- منطق زمان‌بندی و پاپ‌آپ ---
+    def handle_scheduler_trigger():
+        """این تابع زمانی که وقت یادآوری برسد اجرا می‌شود"""
+        db = SessionLocal()
+        try:
+            active_affs = get_active_affirmations(db)
+            if active_affs:
+                # انتخاب یک عبارت تصادفی از بین عبارات فعال
+                chosen_aff = random.choice(active_affs)
+                # اجرای نمایش پاپ‌آپ در Thread امن رابط کاربری
+                page.run_task(show_affirmation_popup, page, chosen_aff.text)
+            else:
+                print("هیچ عبارت فعالی برای نمایش وجود ندارد.")
+        finally:
+            db.close()
 
-    # def on_route_change(e):
-    #     page.views.clear()
-    #
-    #     # نمایش ویو داشبورد
-    #     dashboard_view = DashboardView(page)
-    #     page.views.append(
-    #         ft.View(
-    #             "/",
-    #             [
-    #                 ft.AppBar(title=ft.Text("مربی تأکیدی من", weight=ft.FontWeight.BOLD), bgcolor=ft.colors.SURFACE_VARIANT),
-    #                 dashboard_view.build()
-    #             ],
-    #         )
-    #     )
-    #     page.update()
-    #
-    # def view_pop(e):
-    #     page.views.pop()
-    #     top_view = page.views[-1]
-    #     page.go(top_view.route)
-    #
-    # page.on_route_change = on_route_change
-    # page.on_view_pop = view_pop
-    # page.go(page.route)
+    # اتصال Scheduler به Flet و شروع زمان‌بندی (تست: هر 1 دقیقه)
+    set_ui_callback(handle_scheduler_trigger)
+    start_scheduler()
+    schedule_interval_reminder(minutes=1) # برای تست روی 1 دقیقه تنظیم شده است
+    # -------------------------------
 
-
-    # مقداردهی صفحات
+    # آماده‌سازی صفحات
     dashboard_view = DashboardView(page)
     affirmations_view = AffirmationsView(page)
+    timeline_view = TimelineView(page)
 
-    # محفظه اصلی برای نمایش محتوای صفحات
-    main_content = ft.Container(
-        expand=True,
-        padding=20,
-        content=dashboard_view.build()
-    )
+    main_content = ft.Container(expand=True, padding=20)
+
     def on_nav_change(e):
         selected_index = e.control.selected_index
         if selected_index == 0:
             main_content.content = dashboard_view.build()
         elif selected_index == 1:
             main_content.content = affirmations_view.build()
+        elif selected_index == 2:
+            main_content.content = timeline_view.build()
         page.update()
 
     # منوی کناری (Sidebar)
@@ -94,15 +91,17 @@ def main(page: ft.Page):
         on_change=on_nav_change,
     )
 
-    # چیدمان کلی صفحه
+    # چیدمان اولیه برنامه
+    main_content.content = dashboard_view.build()
+
     page.add(
         ft.Row(
             [
                 rail,
                 ft.VerticalDivider(width=1),
-                main_content,
+                main_content
             ],
-            expand=True,
+            expand=True
         )
     )
 
