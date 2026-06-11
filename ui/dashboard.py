@@ -7,7 +7,6 @@ class DashboardView:
         self.page = page
 
     def build(self):
-        # دریافت اطلاعات کاربر از دیتابیس
         db = SessionLocal()
         try:
             progress = get_user_progress(db)
@@ -18,47 +17,48 @@ class DashboardView:
         finally:
             db.close()
 
-        # فرمت‌بندی اعداد برای خوانایی بهتر (جداسازی سه‌رقمی)
-        formatted_xp = f"{xp:,}"
-
-        # کارت‌های آماری
         stats_row = ft.Row(
             controls=[
-                self._create_stat_card("سطح فعلی", str(level), ft.colors.BLUE_400),
-                self._create_stat_card("امتیاز (XP)", formatted_xp, ft.colors.AMBER_400),
-                self._create_stat_card("استریک (روز)", str(streak), ft.colors.GREEN_400),
-                self._create_stat_card("بهترین استریک", str(best_streak), ft.colors.PURPLE_400),
+                self._create_stat_card("سطح فعلی", str(level), ft.icons.STAR, ft.colors.BLUE_400),
+                self._create_stat_card("امتیاز (XP)", f"{xp:,}", ft.icons.BOLT, ft.colors.AMBER_400),
+                self._create_stat_card("استریک", f"{streak} روز", ft.icons.LOCAL_FIRE_DEPARTMENT, ft.colors.GREEN_400),
+                self._create_stat_card("بهترین استریک", f"{best_streak} روز", ft.icons.EMOJI_EVENTS, ft.colors.PURPLE_400),
             ],
-            alignment=ft.MainAxisAlignment.CENTER,
-            spacing=20
+            alignment=ft.MainAxisAlignment.SPACE_BETWEEN,
         )
 
         return ft.Column(
             controls=[
-                ft.Container(height=20),
-                ft.Text("خلاصه وضعیت شما", size=24, weight=ft.FontWeight.BOLD),
-                ft.Divider(height=20, color=ft.colors.TRANSPARENT),
+                ft.Text("خوش برگشتی! 🌟", size=32, weight=ft.FontWeight.BOLD),
+                ft.Text("امروز یک روز عالی برای رشد و پیشرفت است.", size=16, color=ft.colors.OUTLINE),
+                ft.Container(height=30),
                 stats_row,
-                ft.Divider(height=40, color=ft.colors.ON_SURFACE_VARIANT),
-                # در اینجا بعداً بخش لیست عبارات و هیت‌مپ اضافه می‌شود
-                ft.Text("عبارات تأکیدی فعال", size=20, weight=ft.FontWeight.W_600),
+                ft.Container(height=40),
+                # فضای آماده برای اضافه شدن Heatmap در مراحل بعدی
+                ft.Container(
+                    content=ft.Column([
+                        ft.Text("وضعیت تمرین‌های امروز", size=20, weight=ft.FontWeight.W_600),
+                        ft.ProgressBar(value=0.4, color=ft.colors.GREEN_400, bgcolor=ft.colors.SURFACE_VARIANT, height=10),
+                        ft.Text("۲ از ۵ تمرین انجام شده", size=12, color=ft.colors.OUTLINE)
+                    ]),
+                    padding=20,
+                    border_radius=15,
+                    bgcolor=ft.colors.SURFACE_VARIANT
+                )
             ],
-            horizontal_alignment=ft.CrossAxisAlignment.CENTER,
+            scroll=ft.ScrollMode.AUTO,
         )
 
-    def _create_stat_card(self, title, value, color):
-        """متد کمکی برای ساخت کارت‌های آماری زیبا"""
-        return ft.Card(
-            elevation=4,
-            content=ft.Container(
-                padding=20,
-                width=150,
-                content=ft.Column(
-                    controls=[
-                        ft.Text(title, size=14, color=ft.colors.OUTLINE),
-                        ft.Text(value, size=28, weight=ft.FontWeight.BOLD, color=color),
-                    ],
-                    horizontal_alignment=ft.CrossAxisAlignment.CENTER,
-                )
+    def _create_stat_card(self, title, value, icon, color):
+        return ft.Container(
+            width=200,
+            padding=20,
+            border_radius=15,
+            bgcolor=ft.colors.SURFACE_VARIANT,
+            content=ft.Column(
+                controls=[
+                    ft.Row([ft.Icon(icon, color=color, size=30), ft.Text(title, size=16, color=ft.colors.OUTLINE)], alignment=ft.MainAxisAlignment.START),
+                    ft.Text(value, size=32, weight=ft.FontWeight.BOLD, color=color),
+                ],
             )
         )
